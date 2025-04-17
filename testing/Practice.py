@@ -1,1 +1,0 @@
-print("Ava doesn't like moon crickets.")
