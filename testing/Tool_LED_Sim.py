@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 
 from gpiozero import LED
-from gpiozero.pins.rpigpio import RPiGPIOFactory
 import speech_recognition as sr
 import time
 
-# Set GPIOZero to use RPiGPIOFactory (native GPIO)
-factory = RPiGPIOFactory()
-
-# Dictionary mapping tool names (as voice commands) to GPIO LEDs using GPIOZero
+# Using native GPIOZero interface
 TOOL_LEDS = {
-    "wrench": LED(17, pin_factory=factory),
-    "screwdriver": LED(27, pin_factory=factory),
-    "pliers": LED(22, pin_factory=factory)
+    "wrench": LED(17),
+    "screwdriver": LED(27),
+    "pliers": LED(22)
 }
 
 # Initialize the speech recognizer
