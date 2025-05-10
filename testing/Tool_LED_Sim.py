@@ -23,7 +23,7 @@ try:
     print("Say a tool name (wrench, screwdriver, pliers):")
     
     # Setup microphone input for voice recognition
-    with sr.Microphone() as source:
+    with sr.Microphone(sample_rate=16000) as source:
         recognizer.adjust_for_ambient_noise(source)
         audio = recognizer.listen(source)
         print("Processing...")
