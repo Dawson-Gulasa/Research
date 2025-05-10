@@ -1,47 +1,40 @@
 #!/usr/bin/env python3
 
-from periphery import GPIO
-import speech_recognition as sr
-import time
 import os
+import time
+import speech_recognition as sr
 
-# Automatically detect the available GPIO chip
-gpio_chip = None
-for chip in os.listdir('/dev'):
-    if chip.startswith("gpiochip"):
-        gpio_chip = f"/dev/{chip}"
-        break
-
-if not gpio_chip:
-    print("Error: No GPIO chip found.")
-    exit(1)
-
-print(f"Using GPIO Chip: {gpio_chip}")
-
-# GPIO Pin mapping (using GPIO numbers, not physical pin numbers)
+# GPIO pin numbers (BCM numbering)
 TOOL_PINS = {
     "wrench": 17,
     "screwdriver": 27,
     "pliers": 22
 }
 
-# Initialize GPIO pins (only if chip is detected)
-gpio_pins = {}
-try:
-    for tool, pin in TOOL_PINS.items():
-        gpio_pins[tool] = GPIO(gpio_chip, pin, "out")
-except Exception as e:
-    print(f"Error initializing GPIOs: {e}")
-    exit(1)
+# Function to export GPIO pins and set them as outputs
+def setup_gpio():
+    for pin in TOOL_PINS.values():
+        try:
+            with open(f"/sys/class/gpio/export", "w") as f:
+                f.write(str(pin))
+        except:
+            pass  # Ignore if already exported
 
+        with open(f"/sys/class/gpio/gpio{pin}/direction", "w") as f:
+            f.write("out")
+
+# Function to clear all LEDs
 def clear_leds():
-    """Function to turn off all LEDs."""
-    for gpio in gpio_pins.values():
-        if gpio is not None:
-            gpio.write(False)
+    for pin in TOOL_PINS.values():
+        try:
+            with open(f"/sys/class/gpio/gpio{pin}/value", "w") as f:
+                f.write("0")
+        except:
+            pass
 
 # Setup voice recognition
 recognizer = sr.Recognizer()
+setup_gpio()
 
 try:
     print("Say a tool name (wrench, screwdriver, pliers):")
@@ -58,12 +51,14 @@ try:
         
         # Clear LEDs before activating the correct one
         clear_leds()
-        for tool, gpio in gpio_pins.items():
+        for tool, pin in TOOL_PINS.items():
             if tool in command:
-                print(f"Activating {tool} LED on pin {TOOL_PINS[tool]}")
-                gpio.write(True)
+                print(f"Activating {tool} LED on pin {pin}")
+                with open(f"/sys/class/gpio/gpio{pin}/value", "w") as f:
+                    f.write("1")
                 time.sleep(5)
-                gpio.write(False)
+                with open(f"/sys/class/gpio/gpio{pin}/value", "w") as f:
+                    f.write("0")
                 break
         else:
             print("No matching tool found.")
@@ -76,6 +71,10 @@ except Exception as e:
     print(f"Error: {str(e)}")
 finally:
     clear_leds()
-    for gpio in gpio_pins.values():
-        if gpio is not None:
-            gpio.close()
+    # Unexport GPIOs to clean up
+    for pin in TOOL_PINS.values():
+        try:
+            with open(f"/sys/class/gpio/unexport", "w") as f:
+                f.write(str(pin))
+        except:
+            pass
