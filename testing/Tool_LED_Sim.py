@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 
-from gpiozero import LED
+from periphery import GPIO
 import speech_recognition as sr
 import time
 
-# Using native GPIOZero interface
-TOOL_LEDS = {
-    "wrench": LED(17),
-    "screwdriver": LED(27),
-    "pliers": LED(22)
+# GPIO Pin mapping (using GPIO numbers, not physical pin numbers)
+TOOL_PINS = {
+    "wrench": 17,
+    "screwdriver": 27,
+    "pliers": 22
 }
 
-# Initialize the speech recognizer
-recognizer = sr.Recognizer()
+# Initialize GPIO pins
+gpio_pins = {tool: GPIO(f"/dev/gpiochip0", pin, "out") for tool, pin in TOOL_PINS.items()}
 
 def clear_leds():
     """Function to turn off all LEDs."""
-    for led in TOOL_LEDS.values():
-        led.off()
+    for gpio in gpio_pins.values():
+        gpio.write(False)
+
+# Setup voice recognition
+recognizer = sr.Recognizer()
 
 try:
     print("Say a tool name (wrench, screwdriver, pliers):")
@@ -34,12 +37,12 @@ try:
         
         # Clear LEDs before activating the correct one
         clear_leds()
-        for tool, led in TOOL_LEDS.items():
+        for tool, gpio in gpio_pins.items():
             if tool in command:
-                print(f"Activating {tool} LED")
-                led.on()
+                print(f"Activating {tool} LED on pin {TOOL_PINS[tool]}")
+                gpio.write(True)
                 time.sleep(5)
-                led.off()
+                gpio.write(False)
                 break
         else:
             print("No matching tool found.")
@@ -52,3 +55,5 @@ except Exception as e:
     print(f"Error: {str(e)}")
 finally:
     clear_leds()
+    for gpio in gpio_pins.values():
+        gpio.close()
