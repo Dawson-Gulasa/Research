@@ -3,6 +3,20 @@
 from periphery import GPIO
 import speech_recognition as sr
 import time
+import os
+
+# Automatically detect the available GPIO chip
+gpio_chip = None
+for chip in os.listdir('/dev'):
+    if chip.startswith("gpiochip"):
+        gpio_chip = f"/dev/{chip}"
+        break
+
+if not gpio_chip:
+    print("Error: No GPIO chip found.")
+    exit(1)
+
+print(f"Using GPIO Chip: {gpio_chip}")
 
 # GPIO Pin mapping (using GPIO numbers, not physical pin numbers)
 TOOL_PINS = {
@@ -11,13 +25,20 @@ TOOL_PINS = {
     "pliers": 22
 }
 
-# Initialize GPIO pins
-gpio_pins = {tool: GPIO(f"/dev/gpiochip0", pin, "out") for tool, pin in TOOL_PINS.items()}
+# Initialize GPIO pins (only if chip is detected)
+gpio_pins = {}
+try:
+    for tool, pin in TOOL_PINS.items():
+        gpio_pins[tool] = GPIO(gpio_chip, pin, "out")
+except Exception as e:
+    print(f"Error initializing GPIOs: {e}")
+    exit(1)
 
 def clear_leds():
     """Function to turn off all LEDs."""
     for gpio in gpio_pins.values():
-        gpio.write(False)
+        if gpio is not None:
+            gpio.write(False)
 
 # Setup voice recognition
 recognizer = sr.Recognizer()
@@ -56,4 +77,5 @@ except Exception as e:
 finally:
     clear_leds()
     for gpio in gpio_pins.values():
-        gpio.close()
+        if gpio is not None:
+            gpio.close()
