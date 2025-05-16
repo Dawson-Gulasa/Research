@@ -2,6 +2,8 @@ import speech_recognition as sr
 
 def recognize_speech_from_mic():
     recognizer = sr.Recognizer()
+    
+    # Explicitly use the Yeti Microphone (Card 2)
     microphone = sr.Microphone(device_index=2)
 
     with microphone as source:
