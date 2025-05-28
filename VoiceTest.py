@@ -1,29 +1,31 @@
 import speech_recognition as sr
+from datetime import date
+from time import sleep
 
-def recognize_speech_from_mic():
-    recognizer = sr.Recognizer()
-    
-    # Explicitly use the Yeti Microphone (Card 2)
-    microphone = sr.Microphone(device_index=2)
+# Initialize recognizer and microphone
+r = sr.Recognizer()
+mic = sr.Microphone()
 
+print("Voice recognition started. Say something!")
+
+while True:
     try:
-        with microphone as source:
-            print("Adjusting for ambient noise... Please be silent for a moment.")
-            recognizer.adjust_for_ambient_noise(source, duration=1)
-            print("Listening now... Speak clearly.")
-            audio = recognizer.listen(source)
+        with mic as source:
+            r.adjust_for_ambient_noise(source)
+            audio = r.listen(source)
 
-        print("Recognizing...")
-        text = recognizer.recognize_google(audio)
-        print("You said: " + text)
+        words = r.recognize_google(audio).lower()
+        print(f"You said: {words}")
 
-    except sr.RequestError:
-        print("Could not request results from Google Speech Recognition service.")
+        if "today" in words:
+            print(date.today())
+
+        if "stop" in words:
+            print("Stopping...")
+            sleep(1)
+            break
+
     except sr.UnknownValueError:
-        print("Sorry, I could not understand what you said.")
-    except AssertionError as e:
-        print(f"Microphone Error: {e}")
-
-if __name__ == "__main__":
-    print("Speech to Text - Microphone Input")
-    recognize_speech_from_mic()
+        print("Sorry, I didn’t catch that.")
+    except sr.RequestError:
+        print("Speech recognition service is unavailable.")
