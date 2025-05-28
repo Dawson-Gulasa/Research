@@ -1,27 +1,29 @@
-from gpiozero import LED, Button
-from time import sleep
+import speech_recognition as sr
 
-# Define pin connections
-led = LED(17)
-button = Button(2)
+def recognize_speech_from_mic():
+    recognizer = sr.Recognizer()
+    
+    # Explicitly use the Yeti Microphone (Card 2)
+    microphone = sr.Microphone(device_index=2)
 
-print("GPIO Test: LED should blink, press button to test input.")
+    try:
+        with microphone as source:
+            print("Adjusting for ambient noise... Please be silent for a moment.")
+            recognizer.adjust_for_ambient_noise(source, duration=1)
+            print("Listening now... Speak clearly.")
+            audio = recognizer.listen(source)
 
-try:
-    while True:
-        # Blink the LED
-        led.on()
-        print("LED ON")
-        sleep(0.5)
-        led.off()
-        print("LED OFF")
-        sleep(0.5)
+        print("Recognizing...")
+        text = recognizer.recognize_google(audio)
+        print("You said: " + text)
 
-        # Check for button press
-        if button.is_pressed:
-            print("Button was pressed!")
+    except sr.RequestError:
+        print("Could not request results from Google Speech Recognition service.")
+    except sr.UnknownValueError:
+        print("Sorry, I could not understand what you said.")
+    except AssertionError as e:
+        print(f"Microphone Error: {e}")
 
-except KeyboardInterrupt:
-    print("\nExiting program.")
-finally:
-    led.off()
+if __name__ == "__main__":
+    print("Speech to Text - Microphone Input")
+    recognize_speech_from_mic()
